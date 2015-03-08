@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Time push</title>
+	<script src="/~relayr"></script>
+	<script type="text/javascript">
+		RelayRConnection.ready(function() {
+			RelayR.TimeRelay.client.timeReceive = function(time) {
+				document.getElementById('time').innerHTML = time;
+			};
+		});
+	</script>
+</head>
+<body>
+<div id="time"></div>
+</body>
+</html>
