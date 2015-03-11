@@ -23,6 +23,8 @@ type negotiationResponse struct {
 	ConnectionID string
 }
 
+var ClientScriptFunc func([]byte) []byte
+
 // Handle specifies the route to server the RelayR client script from.
 func Handle(route string, e *Exchange) {
 	setupMainRoute(route, e)
@@ -74,6 +76,7 @@ func setupWebSocketRoute(route string, e *Exchange) {
 
 // Write the client side script to the response
 func writeRelayScript(e *Exchange, w http.ResponseWriter, route string) {
+	resultBuff := bytes.Buffer{}
 	buff := bytes.Buffer{}
 
 	buff.WriteString(fmt.Sprintf(connectionClassScript, route))
@@ -91,5 +94,12 @@ func writeRelayScript(e *Exchange, w http.ResponseWriter, route string) {
 	}
 
 	buff.WriteString(relayClassEnd)
-	io.Copy(w, &buff)
+
+	if ClientScriptFunc != nil {
+		resultBuff.Write(ClientScriptFunc(buff.Bytes()))
+	} else {
+		resultBuff.Write(buff.Bytes())
+	}
+
+	io.Copy(w, &resultBuff)
 }
