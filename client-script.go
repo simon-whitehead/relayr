@@ -5,7 +5,7 @@
  *
  */
 
-package relayR
+package relayr
 
 const connectionClassScript = `
 

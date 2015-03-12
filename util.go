@@ -1,4 +1,4 @@
-package relayR
+package relayr
 
 import (
 	"crypto/rand"

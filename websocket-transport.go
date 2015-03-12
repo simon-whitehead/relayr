@@ -1,4 +1,4 @@
-package relayR
+package relayr
 
 import (
 	"bytes"
@@ -9,25 +9,31 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
+type connection struct {
+	ws  *websocket.Conn
+	out chan []byte
+	c   *webSocketTransport
+	id  string
+	e   *Exchange
+}
 
-type webSocketCircuit struct {
+type webSocketTransport struct {
 	connections  map[string]*connection
 	connected    chan *connection
 	disconnected chan *connection
 	e            *Exchange
 }
 
-type connection struct {
-	ws  *websocket.Conn
-	out chan []byte
-	c   *webSocketCircuit
-	id  string
-	e   *Exchange
+type webSocketClientMessage struct {
+	Server       bool          `json:"S"`
+	Relay        string        `json:"R"`
+	Method       string        `json:"M"`
+	Arguments    []interface{} `json:"A"`
+	ConnectionID string        `json:"C"`
 }
 
-func newWebSocketCircuit(e *Exchange) *webSocketCircuit {
-	c := &webSocketCircuit{
+func newWebSocketTransport(e *Exchange) *webSocketTransport {
+	c := &webSocketTransport{
 		connected:    make(chan *connection),
 		disconnected: make(chan *connection),
 		connections:  make(map[string]*connection),
@@ -39,7 +45,7 @@ func newWebSocketCircuit(e *Exchange) *webSocketCircuit {
 	return c
 }
 
-func (c *webSocketCircuit) listen() {
+func (c *webSocketTransport) listen() {
 	for {
 		select {
 		case conn := <-c.connected:
@@ -53,7 +59,7 @@ func (c *webSocketCircuit) listen() {
 	}
 }
 
-func (c *webSocketCircuit) Send(m clientMessage) {
+func (c *webSocketTransport) CallClientFunction(relay *Relay, fn string, args ...interface{}) {
 	buff := &bytes.Buffer{}
 	encoder := json.NewEncoder(buff)
 
@@ -62,26 +68,15 @@ func (c *webSocketCircuit) Send(m clientMessage) {
 		M string
 		A []interface{}
 	}{
-		m.R,
-		m.M,
-		m.A,
+		relay.Name,
+		fn,
+		args,
 	})
 
-	o := c.connections[m.C]
+	o := c.connections[relay.ConnectionID]
+
 	if o != nil {
 		o.out <- buff.Bytes()
-	}
-}
-
-func (c *webSocketCircuit) Receive(m clientMessage) {
-	if m.S {
-		relay := c.e.getRelayByName(m.R)
-		err := c.e.callMethod(relay.t, m.M, m.C, m.A...)
-		if err != nil {
-			fmt.Println(err)
-		}
-	} else {
-		c.Send(m)
 	}
 }
 
@@ -91,9 +86,23 @@ func (c *connection) read() {
 		if err != nil {
 			break
 		}
-		var m clientMessage
+		var m webSocketClientMessage
 		err = json.Unmarshal(message, &m)
-		c.c.Receive(m)
+		if err != nil {
+			fmt.Println("ERR:", err)
+			continue
+		}
+
+		relay := c.e.getRelayByName(m.Relay, m.ConnectionID)
+
+		if m.Server {
+			err := c.e.callRelayMethod(relay, m.Method, m.Arguments)
+			if err != nil {
+				fmt.Println("ERR:", err)
+			}
+		} else {
+			c.c.CallClientFunction(relay, m.Method, m.Arguments)
+		}
 	}
 	c.ws.Close()
 }
@@ -109,7 +118,7 @@ func (c *connection) write() {
 }
 
 type socketHandler struct {
-	c *webSocketCircuit
+	c *webSocketTransport
 	e *Exchange
 }
 

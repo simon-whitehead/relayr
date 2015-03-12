@@ -1,42 +1,21 @@
-package relayR
+package relayr
 
-type clientOperations struct {
-	e *Exchange
-	r *Relay
+type Client struct {
+	ConnectionID string
+	exchange     *Exchange
+	transport    Transport
 }
 
-func (c *clientOperations) All(m string, a ...interface{}) {
-	c.e.relayAll(*c.r, m, a)
-}
-
-func (c *clientOperations) Others(m string, a ...interface{}) {
-	c.e.relayOthers(*c.r, m, a)
-}
-
-func (c *clientOperations) Group(g, m string, a ...interface{}) {
-	c.e.relayGroup(*c.r, g, m, a)
-}
-
-func (c *clientOperations) AddToGroup(g string) {
-	c.e.addToGroup(g, *c.r)
-}
-
-func (c *clientOperations) RemoveFromGroup(g string) {
-	c.e.removeFromGroup(g, *c.r)
-}
-
-type client struct {
-	connectionID string
-	t            string
-	c            circuit
-}
-
-// clientMessage represents a message from a Circuit
-// to a client
 type clientMessage struct {
-	C string        // ConnectionId
-	R string        // Relay to call
-	M string        // Method to call
-	A []interface{} // arguments to send along
-	S bool          // Server or client?
+	Relay     string `json:"R"`
+	Function  string `json:"F"`
+	Arguments string `json:"A"`
+}
+
+func (c *Client) Exchange() *Exchange {
+	return c.exchange
+}
+
+func (c *Client) Call(relay *Relay, fn string, args ...interface{}) {
+	c.transport.CallClientFunction(relay, fn, args)
 }
