@@ -96,7 +96,7 @@ func (c *connection) read() {
 		relay := c.e.getRelayByName(m.Relay, m.ConnectionID)
 
 		if m.Server {
-			err := c.e.callRelayMethod(relay, m.Method, m.Arguments)
+			err := c.e.callRelayMethod(relay, m.Method, m.Arguments...)
 			if err != nil {
 				fmt.Println("ERR:", err)
 			}

@@ -12,7 +12,7 @@ const connectionClassScript = `
 var RelayRConnection = (function() {
 	var route = '%v';
 	var transport = {
-		WebSocket: {
+		websocket: {
 			connect: function(c) {
 				var s = this;
 				s.socket = new WebSocket("ws://" + window.location.host + route + "/ws?connectionId=" + transport.ConnectionId);
@@ -93,7 +93,7 @@ var RelayRConnection = (function() {
 			},
 			t: function() {
 				if (!!window.WebSocket) {
-					return "WebSocket";
+					return "websocket";
 				}
 
 				// TODO: Implement SSE Circuit
@@ -113,7 +113,7 @@ var RelayRConnection = (function() {
 							var lobj = RelayR[cobj.R].client;
 							var args = [];
 							for (var i = 0; i < cobj.A.length; i++) {
-								args.push(cobj.A[i][0]);
+								args.push(cobj.A[i]);
 							}
 							lobj[cobj.M].apply(lobj||window, args);
 						});

@@ -17,17 +17,17 @@ var ClientScriptFunc func([]byte) []byte
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
-// Exchange represents a hub that lets clients exchange information
+// Exchange represents a hub where clients exchange information
 // via Relays. Relays registered with the Exchange provide methods
 // that can be invoked by clients.
 type Exchange struct {
 	relays     []Relay
-	groups     map[string][]*Client
+	groups     map[string][]*client
 	transports map[string]Transport
 }
 
 type negotiation struct {
-	t string // the transport that the client is comfortable using (e.g, websockets)
+	T string // the transport that the client is comfortable using (e.g, websockets)
 }
 
 type negotiationResponse struct {
@@ -37,6 +37,7 @@ type negotiationResponse struct {
 // NewExchange initializes and returns a new *Exchange
 func NewExchange() *Exchange {
 	e := &Exchange{}
+	e.groups = make(map[string][]*client)
 	e.transports = map[string]Transport{"websocket": newWebSocketTransport(e)}
 
 	return e
@@ -87,12 +88,12 @@ func (e *Exchange) negotiateConnection(w http.ResponseWriter, r *http.Request) {
 	decoder.Decode(&neg)
 
 	encoder := json.NewEncoder(w)
-	encoder.Encode(negotiationResponse{ConnectionID: e.addClient(neg.t)})
+	encoder.Encode(negotiationResponse{ConnectionID: e.addClient(neg.T)})
 }
 
 func (e *Exchange) addClient(t string) string {
 	cID := generateConnectionID()
-	e.groups["Global"] = append(e.groups["Global"], &Client{ConnectionID: cID, exchange: e, transport: e.transports[t]})
+	e.groups["Global"] = append(e.groups["Global"], &client{ConnectionID: cID, exchange: e, transport: e.transports[t]})
 	return cID
 }
 
@@ -146,7 +147,18 @@ func (e *Exchange) getRelayByName(name string, cID string) *Relay {
 	// Create an instance of Relay
 	for _, r := range e.relays {
 		if r.Name == name {
-			return &r
+			relay := &Relay{
+				Name:         name,
+				ConnectionID: cID,
+				t:            r.t,
+			}
+
+			relay.Clients = &ClientOperations{
+				e:     e,
+				relay: relay,
+			}
+
+			return relay
 		}
 	}
 
@@ -176,4 +188,42 @@ func buildArgValues(relay *Relay, args ...interface{}) []reflect.Value {
 
 func (e *Exchange) Relay(x interface{}) *Relay {
 	return e.getRelayByName(reflect.TypeOf(x).Name(), generateConnectionID())
+}
+
+func (e *Exchange) callClientMethod(r *Relay, fn string, args ...interface{}) {
+	if r.ConnectionID == "" {
+		e.callGroupMethod(r, "Global", fn, args...)
+		return
+	}
+
+	c := e.getClientByConnectionID(r.ConnectionID)
+	if c != nil {
+		c.transport.CallClientFunction(r, fn, args...)
+	}
+}
+
+func (e *Exchange) callGroupMethod(relay *Relay, group, fn string, args ...interface{}) {
+	for _, c := range e.groups[group] {
+		r := e.getRelayByName(relay.Name, c.ConnectionID)
+		c.transport.CallClientFunction(r, fn, args...)
+	}
+}
+
+func (e *Exchange) callGroupMethodExcept(relay *Relay, group, fn string, args ...interface{}) {
+	for _, c := range e.groups[group] {
+		if c.ConnectionID == relay.ConnectionID {
+			continue
+		}
+		r := e.getRelayByName(relay.Name, c.ConnectionID)
+		c.transport.CallClientFunction(r, fn, args...)
+	}
+}
+
+func (e *Exchange) getClientByConnectionID(cID string) *client {
+	for _, c := range e.groups["Global"] {
+		if c.ConnectionID == cID {
+			return c
+		}
+	}
+	return nil
 }
