@@ -52,6 +52,7 @@ func (c *webSocketTransport) listen() {
 			c.connections[conn.id] = conn
 		case conn := <-c.disconnected:
 			if _, ok := c.connections[conn.id]; ok {
+				c.e.removeFromAllGroups(conn.id)
 				delete(c.connections, conn.id)
 				close(conn.out)
 			}

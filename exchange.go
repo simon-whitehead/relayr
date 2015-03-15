@@ -3,7 +3,6 @@ package relayr
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,12 +12,15 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// ClientScriptFunc is a callback for altering the client side
+// generated Javascript. This can be used to minify/alter the
+// generated RelayR library.
 var ClientScriptFunc func([]byte) []byte
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
 // Exchange represents a hub where clients exchange information
-// via Relays. Relays registered with the Exchange provide methods
+// via Relays. Relays registered with the Exchange expose methods
 // that can be invoked by clients.
 type Exchange struct {
 	relays     []Relay
@@ -34,7 +36,7 @@ type negotiationResponse struct {
 	ConnectionID string
 }
 
-// NewExchange initializes and returns a new *Exchange
+// NewExchange initializes and returns a new Exchange
 func NewExchange() *Exchange {
 	e := &Exchange{}
 	e.groups = make(map[string][]*client)
@@ -126,6 +128,9 @@ func (e *Exchange) writeClientScript(w http.ResponseWriter, route string) {
 	io.Copy(w, &resultBuff)
 }
 
+// RegisterRelay registers a struct as a Relay with the Exchange. This allows clients
+// to invoke server methods on a Relay and allows the Exchange to invoke
+// methods on a Relay on the server side.
 func (e *Exchange) RegisterRelay(x interface{}) {
 	t := reflect.TypeOf(x)
 
@@ -151,6 +156,7 @@ func (e *Exchange) getRelayByName(name string, cID string) *Relay {
 				Name:         name,
 				ConnectionID: cID,
 				t:            r.t,
+				exchange:     e,
 			}
 
 			relay.Clients = &ClientOperations{
@@ -170,7 +176,7 @@ func (e *Exchange) callRelayMethod(relay *Relay, fn string, args ...interface{})
 	method := newInstance.MethodByName(fn)
 	empty := reflect.Value{}
 	if method == empty {
-		return errors.New(fmt.Sprintf("Method '%v' does not exist on relay '%v'", fn, relay.Name))
+		return fmt.Errorf("Method '%v' does not exist on relay '%v'", fn, relay.Name)
 	}
 	method.Call(buildArgValues(relay, args...))
 
@@ -186,6 +192,9 @@ func buildArgValues(relay *Relay, args ...interface{}) []reflect.Value {
 	return r
 }
 
+// Relay generates an instance of a Relay, allowing calls to be made to
+// it on the server side. It is generated a random ConnectionID for the duration
+// of the call and it does not represent an actual client.
 func (e *Exchange) Relay(x interface{}) *Relay {
 	return e.getRelayByName(reflect.TypeOf(x).Name(), generateConnectionID())
 }
@@ -203,9 +212,11 @@ func (e *Exchange) callClientMethod(r *Relay, fn string, args ...interface{}) {
 }
 
 func (e *Exchange) callGroupMethod(relay *Relay, group, fn string, args ...interface{}) {
-	for _, c := range e.groups[group] {
-		r := e.getRelayByName(relay.Name, c.ConnectionID)
-		c.transport.CallClientFunction(r, fn, args...)
+	if _, ok := e.groups[group]; ok {
+		for _, c := range e.groups[group] {
+			r := e.getRelayByName(relay.Name, c.ConnectionID)
+			c.transport.CallClientFunction(r, fn, args...)
+		}
 	}
 }
 
@@ -226,4 +237,32 @@ func (e *Exchange) getClientByConnectionID(cID string) *client {
 		}
 	}
 	return nil
+}
+
+func (e *Exchange) removeFromAllGroups(id string) {
+	for group := range e.groups {
+		e.removeFromGroupByID(group, id)
+	}
+}
+
+func (e *Exchange) removeFromGroupByID(g, id string) {
+	if i := e.getClientIndexInGroup(g, id); i > -1 {
+		group := e.groups[g]
+		group[i] = nil
+		e.groups[g] = append(group[:i], group[i+1:]...)
+	}
+}
+
+func (e *Exchange) getClientIndexInGroup(g, id string) int {
+	for i, c := range e.groups[g] {
+		if c.ConnectionID == id {
+			return i
+		}
+	}
+
+	return -1
+}
+
+func (e *Exchange) addToGroup(group, connectionID string) {
+	e.groups[group] = append(e.groups[group], e.getClientByConnectionID(connectionID))
 }
