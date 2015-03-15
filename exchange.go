@@ -250,6 +250,11 @@ func (e *Exchange) removeFromGroupByID(g, id string) {
 		group := e.groups[g]
 		group[i] = nil
 		e.groups[g] = append(group[:i], group[i+1:]...)
+
+		// clean up the group if it is empty
+		if len(e.groups[g]) == 0 {
+			delete(e.groups, g)
+		}
 	}
 }
 

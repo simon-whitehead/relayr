@@ -11,9 +11,8 @@ type GroupOperations struct {
 
 // Add adds a client to a group via its ConnectionID. It
 // is a member of the group for the remainder of its
-// connection, until disconnection. At that point, the
-// client must re-negotiate its place within the group
-// to be considered a member of it.
+// connection. At that point, the client must re-negotiate
+// its place within the group to be considered a member of it.
 func (g *GroupOperations) Add(connectionID string) {
 	g.e.addToGroup(g.group, connectionID)
 }
@@ -23,6 +22,8 @@ func (g *GroupOperations) Remove(connectionID string) {
 	g.e.removeFromGroupByID(g.group, connectionID)
 }
 
+// Call invokes a client-side method across a Group of clients,
+// passing args to them.
 func (g *GroupOperations) Call(fn string, args ...interface{}) {
 	g.e.callGroupMethod(g.relay, g.group, fn, args...)
 }

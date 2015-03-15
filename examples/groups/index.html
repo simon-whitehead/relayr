@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Groups</title>
+	<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/jquery-jgrowl/1.4.1/jquery.jgrowl.min.css" />
+	<script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery-jgrowl/1.4.1/jquery.jgrowl.min.js"></script>
+	<script type="text/javascript" src="/relayr"></script>
+	<script type="text/javascript">
+		$(function() {
+			RelayRConnection.ready(function() {
+				 RelayR.NotificationRelay.client.notificationReceive = function(notification) {
+					$.jGrowl(notification);
+				 };
+
+				$('#group1').change(function() {
+					if ($(this).is(':checked')) {
+						RelayR.NotificationRelay.server.subscribe("Group 1");
+					} else {
+						RelayR.NotificationRelay.server.unsubscribe("Group 1");
+					}
+				});
+
+				$('#group2').change(function() {
+					if ($(this).is(':checked')) {
+						RelayR.NotificationRelay.server.subscribe("Group 2");
+					} else {
+						RelayR.NotificationRelay.server.unsubscribe("Group 2");
+					}
+				});
+			});
+		 });
+	</script>
+</head>
+<body>
+	<p>
+		Select a group below to toggle membership
+	</p>
+	<div id="membership">
+	  <input type="checkbox" id="group1"><label for="check1">Group 1</label>
+	  <input type="checkbox" id="group2"><label for="check2">Group 2</label>
+	</div>
+</body>
+</html>
