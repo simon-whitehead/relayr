@@ -18,7 +18,7 @@ Also important: RelayR currently only supports WebSockets. Server Sent Events an
 
 After you have installed the [Gorilla WebSocket package](https://github.com/gorilla/websocket), you can run the following:
 
-    go get -u https://github.com/simon-whitehead/relayR
+    go get -u https://github.com/simon-whitehead/relayr
 
 ### Examples
 
