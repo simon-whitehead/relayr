@@ -23,6 +23,6 @@ func (g *GroupOperations) Remove(connectionID string) {
 	g.e.removeFromGroupByID(g.group, connectionID)
 }
 
-func (g *GroupOperations) Invoke(fn string, args ...interface{}) {
+func (g *GroupOperations) Call(fn string, args ...interface{}) {
 	g.e.callGroupMethod(g.relay, g.group, fn, args...)
 }
