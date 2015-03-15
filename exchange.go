@@ -14,7 +14,7 @@ import (
 
 // ClientScriptFunc is a callback for altering the client side
 // generated Javascript. This can be used to minify/alter the
-// generated RelayR library.
+// generated client-side RelayR library before it gets to the browser.
 var ClientScriptFunc func([]byte) []byte
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
@@ -50,9 +50,9 @@ func (e *Exchange) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	op := extractOperationFromURL(r)
 
 	switch op {
-	case OpWebSocket:
+	case opWebSocket:
 		e.upgradeWebSocket(w, r)
-	case OpNegotiate:
+	case opNegotiate:
 		e.negotiateConnection(w, r)
 	default:
 		e.writeClientScript(w, route)

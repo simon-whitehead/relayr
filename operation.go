@@ -1,7 +1,7 @@
 package relayr
 
 const (
-	OpNegotiate = "negotiate"
-	OpConnect   = "connect"
-	OpWebSocket = "ws"
+	opNegotiate = "negotiate"
+	opConnect   = "connect"
+	opWebSocket = "ws"
 )
