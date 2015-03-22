@@ -2,7 +2,7 @@
 
 RelayR is a Go package that provides easy-to-use real time communication APIs for Go web applications.
 
-#### Current version: 0.2.0
+#### Current version: 0.2.1
 
 Please see CHANGELOG.md for details about the changes between versions.
 

@@ -17,6 +17,18 @@ import (
 // generated client-side RelayR library before it gets to the browser.
 var ClientScriptFunc func([]byte) []byte
 
+// A cache for the client script to avoid regenerating it every
+// single page load
+var clientScript []byte
+var cacheEnabled = true
+
+// DisableScriptCache forces the RelayR client-side script to
+// be regenerated on each request, rather than serving it from
+// an internal cache.
+func DisableScriptCache() {
+	cacheEnabled = false
+}
+
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
 // Exchange represents a hub where clients exchange information
@@ -100,32 +112,40 @@ func (e *Exchange) addClient(t string) string {
 }
 
 func (e *Exchange) writeClientScript(w http.ResponseWriter, route string) {
-	resultBuff := bytes.Buffer{}
-	buff := bytes.Buffer{}
-
-	buff.WriteString(fmt.Sprintf(connectionClassScript, route))
-
-	buff.WriteString(relayClassBegin)
-
-	for _, relay := range e.relays {
-		buff.WriteString(fmt.Sprintf(relayBegin, relay.Name))
-
-		for _, method := range relay.methods {
-			buff.WriteString(fmt.Sprintf(relayMethod, lowerFirst(method), relay.Name, method))
-
-		}
-		buff.WriteString(relayEnd)
-	}
-
-	buff.WriteString(relayClassEnd)
-
-	if ClientScriptFunc != nil {
-		resultBuff.Write(ClientScriptFunc(buff.Bytes()))
+	if len(clientScript) > 0 && cacheEnabled {
+		io.Copy(w, bytes.NewBuffer(clientScript))
 	} else {
-		resultBuff.Write(buff.Bytes())
-	}
+		resultBuff := bytes.Buffer{}
+		buff := bytes.Buffer{}
 
-	io.Copy(w, &resultBuff)
+		buff.WriteString(fmt.Sprintf(connectionClassScript, route))
+
+		buff.WriteString(relayClassBegin)
+
+		for _, relay := range e.relays {
+			buff.WriteString(fmt.Sprintf(relayBegin, relay.Name))
+
+			for _, method := range relay.methods {
+				buff.WriteString(fmt.Sprintf(relayMethod, lowerFirst(method), relay.Name, method))
+
+			}
+			buff.WriteString(relayEnd)
+		}
+
+		buff.WriteString(relayClassEnd)
+
+		if ClientScriptFunc != nil {
+			resultBuff.Write(ClientScriptFunc(buff.Bytes()))
+		} else {
+			resultBuff.Write(buff.Bytes())
+		}
+
+		if cacheEnabled {
+			clientScript = resultBuff.Bytes()
+		}
+
+		io.Copy(w, &resultBuff)
+	}
 }
 
 // RegisterRelay registers a struct as a Relay with the Exchange. This allows clients

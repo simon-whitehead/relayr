@@ -1,5 +1,11 @@
 ## RelayR changelog
 
+#### v0.2.0 - v0.2.1
+
+* Added `clientScript` caching variable, which allows the RelayR client-side script to becached in a `[]byte` slice and served each time.
+* Added `DisableScriptCache()` package-level function to disable the above functionality and regenerate the script each page refresh (mostly for debug purposes).
+
+----------------
 
 #### v0.1.0 - v0.2.0
 
