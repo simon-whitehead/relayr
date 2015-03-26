@@ -52,7 +52,10 @@ type negotiationResponse struct {
 func NewExchange() *Exchange {
 	e := &Exchange{}
 	e.groups = make(map[string][]*client)
-	e.transports = map[string]Transport{"websocket": newWebSocketTransport(e)}
+	e.transports = map[string]Transport{
+		"websocket": newWebSocketTransport(e),
+		"longpoll":  newLongPollTransport(e),
+	}
 
 	return e
 }
@@ -66,6 +69,8 @@ func (e *Exchange) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e.upgradeWebSocket(w, r)
 	case opNegotiate:
 		e.negotiateConnection(w, r)
+	case opLongPoll:
+		e.awaitLongPoll(w, r)
 	default:
 		e.writeClientScript(w, route)
 	}
@@ -103,6 +108,20 @@ func (e *Exchange) negotiateConnection(w http.ResponseWriter, r *http.Request) {
 
 	encoder := json.NewEncoder(w)
 	encoder.Encode(negotiationResponse{ConnectionID: e.addClient(neg.T)})
+	for _, c := range e.groups["Global"] {
+		fmt.Println(c.ConnectionID)
+	}
+}
+
+func (e *Exchange) awaitLongPoll(w http.ResponseWriter, r *http.Request) {
+	jsonResponse(w)
+	cid := e.extractConnectionIDFromURL(r)
+	longPoll := e.transports["longpoll"].(*longPollTransport)
+	longPoll.wait(w, cid)
+}
+
+func (e *Exchange) extractConnectionIDFromURL(r *http.Request) string {
+	return r.URL.Query()["connectionId"][0]
 }
 
 func (e *Exchange) addClient(t string) string {
@@ -235,7 +254,7 @@ func (e *Exchange) callGroupMethod(relay *Relay, group, fn string, args ...inter
 	if _, ok := e.groups[group]; ok {
 		for _, c := range e.groups[group] {
 			r := e.getRelayByName(relay.Name, c.ConnectionID)
-			c.transport.CallClientFunction(r, fn, args...)
+			go c.transport.CallClientFunction(r, fn, args...)
 		}
 	}
 }

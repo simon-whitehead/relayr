@@ -4,4 +4,5 @@ const (
 	opNegotiate = "negotiate"
 	opConnect   = "connect"
 	opWebSocket = "ws"
+	opLongPoll  = "longpoll"
 )
