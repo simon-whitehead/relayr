@@ -65,6 +65,10 @@ RelayRConnection = (function() {
 				};
 
 				retry();
+			},
+			send: function(data) {
+				var s = this;
+				web.p(route + '/call?connectionId=' + transport.ConnectionId + '&_=' + new Date().getTime(), data, null, "json", null); 
 			}
 		}
 	};
@@ -128,7 +132,9 @@ RelayRConnection = (function() {
 				xd.onreadystatechange = function() {
 					if (xd.readyState === 4) {
 						if (xd.status === 200) {
-							c(xd);
+							if (c) {
+								c(xd);
+							}
 						} else {
 							s.n();
 						}
@@ -136,7 +142,9 @@ RelayRConnection = (function() {
 				};
 
 				xd.onerror = function() {
-					e(xd);
+					if (e) {
+						e(xd);
+					}
 				};
 
 				xd.send(d);

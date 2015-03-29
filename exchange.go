@@ -31,6 +31,14 @@ func DisableScriptCache() {
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
+type longPollServerCall struct {
+	Server       bool          `json:"S"`
+	Relay        string        `json:"R"`
+	Method       string        `json:"M"`
+	Arguments    []interface{} `json:"A"`
+	ConnectionID string        `json:"C"`
+}
+
 // Exchange represents a hub where clients exchange information
 // via Relays. Relays registered with the Exchange expose methods
 // that can be invoked by clients.
@@ -71,6 +79,8 @@ func (e *Exchange) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e.negotiateConnection(w, r)
 	case opLongPoll:
 		e.awaitLongPoll(w, r)
+	case opCallServer:
+		e.callServer(w, r)
 	default:
 		e.writeClientScript(w, route)
 	}
@@ -115,6 +125,15 @@ func (e *Exchange) awaitLongPoll(w http.ResponseWriter, r *http.Request) {
 	cid := e.extractConnectionIDFromURL(r)
 	longPoll := e.transports["longpoll"].(*longPollTransport)
 	longPoll.wait(w, cid)
+}
+
+func (e *Exchange) callServer(w http.ResponseWriter, r *http.Request) {
+	var msg longPollServerCall
+	decoder := json.NewDecoder(r.Body)
+	decoder.Decode(&msg)
+	cid := e.extractConnectionIDFromURL(r)
+	relay := e.getRelayByName(msg.Relay, cid)
+	go e.callRelayMethod(relay, msg.Method, msg.Arguments...)
 }
 
 func (e *Exchange) extractConnectionIDFromURL(r *http.Request) string {
