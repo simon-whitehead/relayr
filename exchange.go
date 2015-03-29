@@ -108,9 +108,6 @@ func (e *Exchange) negotiateConnection(w http.ResponseWriter, r *http.Request) {
 
 	encoder := json.NewEncoder(w)
 	encoder.Encode(negotiationResponse{ConnectionID: e.addClient(neg.T)})
-	for _, c := range e.groups["Global"] {
-		fmt.Println(c.ConnectionID)
-	}
 }
 
 func (e *Exchange) awaitLongPoll(w http.ResponseWriter, r *http.Request) {
@@ -254,7 +251,7 @@ func (e *Exchange) callGroupMethod(relay *Relay, group, fn string, args ...inter
 	if _, ok := e.groups[group]; ok {
 		for _, c := range e.groups[group] {
 			r := e.getRelayByName(relay.Name, c.ConnectionID)
-			go c.transport.CallClientFunction(r, fn, args...)
+			c.transport.CallClientFunction(r, fn, args...)
 		}
 	}
 }
