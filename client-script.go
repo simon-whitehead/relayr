@@ -106,9 +106,13 @@ RelayRConnection = (function() {
 				xd.setRequestHeader("Content-type", "application/json");
 
 				xd.onreadystatechange = function() {
-					if (xd.readyState === 4 && xd.status === 200) {
-						c(xd);
-					}
+					if (xd.readyState === 4) {
+						if (xd.status === 200) {
+							c(xd);
+						} else {
+							s.n();
+						}
+					} 
 				};
 
 				xd.send();
@@ -122,8 +126,12 @@ RelayRConnection = (function() {
 				xd.setRequestHeader("Content-type", "application/" + t);
 
 				xd.onreadystatechange = function() {
-					if (xd.readyState === 4 && xd.status === 200) {
-						c(xd);
+					if (xd.readyState === 4) {
+						if (xd.status === 200) {
+							c(xd);
+						} else {
+							s.n();
+						}
 					} 
 				};
 
