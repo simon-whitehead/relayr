@@ -7,6 +7,8 @@ for WebSocket support and if not found, will fall back to Long Polling.
 * BUGFIX: Removed renegotiation bug.
 * BUGFIX: Stop `RelayRConnection.ready` being called more than once.
 
+----------------
+
 #### v0.2.0 - v0.2.1
 
 * Added `clientScript` caching variable, which allows the RelayR client-side script to be cached in a `[]byte` slice and served each time.
