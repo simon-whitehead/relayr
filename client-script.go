@@ -12,6 +12,7 @@ const connectionClassScript = `
 var RelayRConnection = {};
 
 RelayRConnection = (function() {
+	var readyCalled = false;
 	var web, transport;
 	var route = '%v';
 	transport = {
@@ -36,7 +37,10 @@ RelayRConnection = (function() {
 				};
 
 				s.socket.onopen = function(evt) {
-					RelayRConnection.r();
+					if (!readyCalled) {
+						RelayRConnection.r();
+						readyCalled = true;
+					}
 				};
 			},
 			send: function(data) {
@@ -46,7 +50,10 @@ RelayRConnection = (function() {
 		},
 		longpoll: {
 			connect: function(c) {
-				RelayRConnection.r();
+				if (!readyCalled) {
+					RelayRConnection.r();
+					readyCalled = true;
+				}
 				var retry;
 				retry = function() {
 					web.gj(route + '/longpoll?connectionId=' + transport.ConnectionId + '&_=' + new Date().getTime(), function(data) {
