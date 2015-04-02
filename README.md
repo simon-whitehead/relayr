@@ -2,7 +2,7 @@
 
 RelayR is a Go package that provides easy-to-use real time communication APIs for Go web applications.
 
-#### Current version: 0.2.1
+#### Current version: 0.3.0
 
 Please see CHANGELOG.md for details about the changes between versions.
 
@@ -11,6 +11,8 @@ Please see CHANGELOG.md for details about the changes between versions.
 #### IMPORTANT:
 
 RelayR relies on the [Gorilla WebSocket package](https://github.com/gorilla/websocket) for WebSocket support. Please head over to that repository, give it a star, and ``go get` it into your `GOPATH`.
+
+RelayR itself however, will fall back to Long Polling for any browsers that do not support Web Sockets (you just need the above package so that your server supports Web Sockets).
 
 Also important: RelayR currently only supports WebSockets. Server Sent Events and Long Polling options are on the roadmap.
 
