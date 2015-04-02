@@ -120,9 +120,7 @@ RelayRConnection = (function() {
 					if (xd.readyState === 4) {
 						if (xd.status === 200) {
 							c(xd);
-						} else {
-							s.n();
-						}
+						} 
 					} 
 				};
 
@@ -142,8 +140,6 @@ RelayRConnection = (function() {
 							if (c) {
 								c(xd);
 							}
-						} else {
-							s.n();
 						}
 					} 
 				};
