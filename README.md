@@ -14,8 +14,6 @@ RelayR relies on the [Gorilla WebSocket package](https://github.com/gorilla/webs
 
 RelayR itself however, will fall back to Long Polling for any browsers that do not support Web Sockets (you just need the above package so that your server supports Web Sockets).
 
-Also important: RelayR currently only supports WebSockets. Server Sent Events and Long Polling options are on the roadmap.
-
 #### Installing RelayR
 
 After you have installed the [Gorilla WebSocket package](https://github.com/gorilla/websocket), you can run the following:
