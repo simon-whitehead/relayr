@@ -59,7 +59,7 @@ func (c *webSocketTransport) listen() {
 	}
 }
 
-func (c *webSocketTransport) CallClientFunction(relay *Relay, fn string, args ...interface{}) {
+func (c *webSocketTransport) CallClientFunction(relay *Relay, cid, fn string, args ...interface{}) {
 	buff := &bytes.Buffer{}
 	encoder := json.NewEncoder(buff)
 
@@ -73,7 +73,7 @@ func (c *webSocketTransport) CallClientFunction(relay *Relay, fn string, args ..
 		args,
 	})
 
-	o := c.connections[relay.ConnectionID]
+	o := c.connections[cid]
 
 	if o != nil {
 		o.out <- buff.Bytes()
@@ -101,7 +101,7 @@ func (c *connection) read() {
 				fmt.Println("ERR:", err)
 			}
 		} else {
-			c.c.CallClientFunction(relay, m.Method, m.Arguments)
+			c.c.CallClientFunction(relay, c.id, m.Method, m.Arguments)
 		}
 	}
 	c.ws.Close()

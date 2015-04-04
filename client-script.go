@@ -75,7 +75,7 @@ RelayRConnection = (function() {
 			},
 			send: function(data) {
 				var s = this;
-				web.p(route + '/call?connectionId=' + transport.ConnectionId + '&_=' + new Date().getTime(), data, null, "json", null); 
+				web.p(route + '/call?connectionId=' + transport.ConnectionId + '&_=' + new Date().getTime(), data, null, "json", null);
 			}
 		}
 	};
@@ -120,8 +120,8 @@ RelayRConnection = (function() {
 					if (xd.readyState === 4) {
 						if (xd.status === 200) {
 							c(xd);
-						} 
-					} 
+						}
+					}
 				};
 
 				xd.send();
@@ -141,7 +141,7 @@ RelayRConnection = (function() {
 								c(xd);
 							}
 						}
-					} 
+					}
 				};
 
 				xd.onerror = function() {
@@ -206,8 +206,10 @@ RelayRConnection = (function() {
 	return {
 		ready: function(r) {
 			RelayRConnection.r = r;
-
 			web.n();
+		},
+		connectionId:function(){
+			return transport.ConnectionId;
 		},
 		callServer: function(r, f, a) {
 			transport[web.t()].send(JSON.stringify({ S: true, C: transport.ConnectionId, R: r, M: f, A: a}));

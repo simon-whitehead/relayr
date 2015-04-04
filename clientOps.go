@@ -5,6 +5,7 @@ package relayr
 type ClientOperations struct {
 	e     *Exchange
 	relay *Relay
+	cid   string
 }
 
 // All invokes a client side method on all clients for the
@@ -16,5 +17,5 @@ func (c *ClientOperations) All(fn string, args ...interface{}) {
 // Others invokes a client side method on all clients except the
 // one who calls it.
 func (c *ClientOperations) Others(fn string, args ...interface{}) {
-	c.e.callGroupMethodExcept(c.relay, "Global", fn, args...)
+	c.e.callGroupMethodExcept(c.relay, "Global", c.cid, fn, args...)
 }

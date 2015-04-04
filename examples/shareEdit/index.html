@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Share Edit</title>
+	<script src="/relayr"></script>
+	<script type="text/javascript">
+		RelayRConnection.ready(function() {
+			RelayR.shareEdit.client.updateValue = function(val) {
+				document.getElementById('val').innerHTML = val;
+			};
+			RelayRConnection.callServer("shareEdit","Get",new Array(RelayRConnection.connectionId()));
+			//RelayR.shareEdit.server.get(RelayRConnection.connectionId());
+		});
+	</script>
+	<script type="text/javascript">
+		function doIt(){
+
+			var radioList = document.getElementsByName("operation");
+			var operation;
+			var i = 0;
+			for (i = 0; i < radioList.length; i++){
+				if (radioList[i].checked){
+					operation = radioList[i].value;
+					break;
+				}
+			}
+
+			var val = document.getElementById("number").value;
+
+			if (operation == "add"){
+				RelayR.shareEdit.server.add(val);
+			}else if (operation == "del"){
+				RelayR.shareEdit.server.del(val);
+			}
+		}
+	</script>
+</head>
+<body>
+	<form>
+		<div id="val">0</div><p>
+		<input type="radio" name="operation" id="operation" value="add" checked>Add</input>
+		<input type="radio" name="operation" id="operation" value="del">Del</input>
+		<input type="text" id="number" maxlength="10" size="15" value="5"></input>
+		<input type="button" value="Execute" onclick="doIt();">
+	</form>
+</body>
+</html>
