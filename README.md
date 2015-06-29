@@ -18,7 +18,7 @@ RelayR itself however, will fall back to Long Polling for any browsers that do n
 
 After you have installed the [Gorilla WebSocket package](https://github.com/gorilla/websocket), you can run the following:
 
-    go get https://github.com/simon-whitehead/relayr
+    go get -u github.com/simon-whitehead/relayr
 
 ### Examples
 
