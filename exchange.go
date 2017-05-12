@@ -43,7 +43,7 @@ type longPollServerCall struct {
 // via Relays. Relays registered with the Exchange expose methods
 // that can be invoked by clients.
 type Exchange struct {
-	relays     []Relay
+	relays     []*Relay
 	groups     map[string][]*client
 	transports map[string]Transport
 }
@@ -191,7 +191,30 @@ func (e *Exchange) RegisterRelay(x interface{}) {
 
 	methods := e.getMethodsForType(t)
 
-	e.relays = append(e.relays, Relay{Name: t.Name(), t: t, methods: methods, exchange: e})
+	name := t.Name()
+
+	relayFlag := 0
+
+	if t.Kind() == reflect.Ptr {
+		name = t.Elem().Name()
+		t = t.Elem()
+		relayFlag = relayFlag_Ptr
+	}
+
+	relay := &Relay{
+		Name:      name,
+		t:         t,
+		methods:   methods,
+		exchange:  e,
+		relayFlag: relayFlag,
+	}
+
+	relay.Clients = &ClientOperations{
+		e:     e,
+		relay: relay,
+	}
+
+	e.relays = append(e.relays, relay)
 }
 
 func (e *Exchange) getMethodsForType(t reflect.Type) []string {
@@ -203,31 +226,34 @@ func (e *Exchange) getMethodsForType(t reflect.Type) []string {
 	return r
 }
 
-func (e *Exchange) getRelayByName(name string, cID string) *Relay {
+func (e *Exchange) getRelayByName(name string, cID string) (relay *Relay) {
 	// Create an instance of Relay
 	for _, r := range e.relays {
 		if r.Name == name {
-			relay := &Relay{
-				Name:         name,
-				ConnectionID: cID,
-				t:            r.t,
-				exchange:     e,
+			if r.relayFlag&relayFlag_Ptr != 0 {
+				relay = r
+			} else {
+				relay = &Relay{
+					Name:         name,
+					ConnectionID: cID,
+					t:            r.t,
+					exchange:     e,
+				}
 			}
-
 			relay.Clients = &ClientOperations{
 				e:     e,
 				relay: relay,
+				cid:   cID,
 			}
-
-			return relay
+			break
 		}
 	}
 
-	return nil
+	return
 }
 
 func (e *Exchange) callRelayMethod(relay *Relay, fn string, args ...interface{}) error {
-	newInstance := reflect.New(relay.t)
+	newInstance := relay.NewInstance()
 	method := newInstance.MethodByName(fn)
 	empty := reflect.Value{}
 	if method == empty {
@@ -254,15 +280,15 @@ func (e *Exchange) Relay(x interface{}) *Relay {
 	return e.getRelayByName(reflect.TypeOf(x).Name(), generateConnectionID())
 }
 
-func (e *Exchange) callClientMethod(r *Relay, fn string, args ...interface{}) {
+func (e *Exchange) callClientMethod(r *Relay, cid, fn string, args ...interface{}) {
 	if r.ConnectionID == "" {
 		e.callGroupMethod(r, "Global", fn, args...)
 		return
 	}
 
-	c := e.getClientByConnectionID(r.ConnectionID)
+	c := e.getClientByConnectionID(cid)
 	if c != nil {
-		c.transport.CallClientFunction(r, fn, args...)
+		c.transport.CallClientFunction(r, cid, fn, args...)
 	}
 }
 
@@ -270,18 +296,18 @@ func (e *Exchange) callGroupMethod(relay *Relay, group, fn string, args ...inter
 	if _, ok := e.groups[group]; ok {
 		for _, c := range e.groups[group] {
 			r := e.getRelayByName(relay.Name, c.ConnectionID)
-			c.transport.CallClientFunction(r, fn, args...)
+			c.transport.CallClientFunction(r, c.ConnectionID, fn, args...)
 		}
 	}
 }
 
-func (e *Exchange) callGroupMethodExcept(relay *Relay, group, fn string, args ...interface{}) {
+func (e *Exchange) callGroupMethodExcept(relay *Relay, group, mycid, fn string, args ...interface{}) {
 	for _, c := range e.groups[group] {
-		if c.ConnectionID == relay.ConnectionID {
+		if c.ConnectionID == mycid {
 			continue
 		}
 		r := e.getRelayByName(relay.Name, c.ConnectionID)
-		c.transport.CallClientFunction(r, fn, args...)
+		c.transport.CallClientFunction(r, c.ConnectionID, fn, args...)
 	}
 }
 

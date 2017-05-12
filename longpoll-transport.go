@@ -58,7 +58,7 @@ func newLongPollTransport(e *Exchange) *longPollTransport {
 	return lp
 }
 
-func (t *longPollTransport) CallClientFunction(relay *Relay, fn string, args ...interface{}) {
+func (t *longPollTransport) CallClientFunction(relay *Relay, cid, fn string, args ...interface{}) {
 	buff := &bytes.Buffer{}
 	encoder := json.NewEncoder(buff)
 
@@ -72,7 +72,7 @@ func (t *longPollTransport) CallClientFunction(relay *Relay, fn string, args ...
 		args,
 	})
 
-	go t.withClient(relay.ConnectionID, func(c longPollConnection) {
+	go t.withClient(cid, func(c longPollConnection) {
 		// force a timeout if we block on sending too long..
 		go func() {
 			<-time.After(time.Second * 30)
